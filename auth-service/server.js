@@ -132,7 +132,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.PORT || 4000}`,
+        url:
+          process.env.APP_URL || `http://localhost:${process.env.PORT || 4000}`,
       },
     ],
     components: {
@@ -148,7 +149,40 @@ const swaggerOptions = {
   apis: ["./docs/*.swagger.js"] /* Swagger documentation comments path*/,
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use("/docs", serve, setup(swaggerSpec));
+
+app.get("/openapi.json", (req, res) => {
+  res.json(swaggerSpec);
+});
+
+app.get("/docs", (req, res) => {
+  res.type("html").send(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Swagger UI</title>
+        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+        <style>
+          body { margin: 0; background: #fafafa; }
+        </style>
+      </head>
+      <body>
+        <div id="swagger-ui"></div>
+
+        <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+        <script>
+          window.onload = () => {
+            SwaggerUIBundle({
+              url: "/openapi.json",
+              dom_id: "#swagger-ui"
+            });
+          };
+        </script>
+      </body>
+    </html>
+  `);
+});
 
 /* --- MICROSERVICE HEALTH CHECK --- */
 app.get("/health", (req, res) => {
