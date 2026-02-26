@@ -13,6 +13,7 @@ const { validateStrongPassword } = require("./passowrdValidator");
 const { validateEmail } = require("./emailValidator");
 const { randomInt, createHash } = require("crypto");
 const nodemailer = require("nodemailer");
+const path = require("path");
 const app = express();
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -146,7 +147,9 @@ const swaggerOptions = {
       },
     },
   },
-  apis: ["./docs/*.swagger.js"] /* Swagger documentation comments path*/,
+  apis: [
+    path.join(process.cwd(), "docs", "*.swagger.js"),
+  ] /* Swagger documentation comments path*/,
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
