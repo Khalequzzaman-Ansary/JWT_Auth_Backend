@@ -156,6 +156,13 @@ app.get("/health", (req, res) => {
 });
 
 /* --- ROUTES --- */
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Auth Service is live",
+    health: "/health",
+    docs: "/docs",
+  });
+});
 
 /* [1] Registration Endpoint */
 app.post("/auth/register", async (req, res) => {
@@ -376,13 +383,7 @@ mailer
   .catch((err) => console.error("❌ SMTP error:", err.message));
 
 /* --- START SERVER --- */
-module.exports = app;
-
-if (require.main === module) {
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(
-      `🔒 Auth Serv:contentReference[oaicite:5]{index=5}/localhost:${PORT}`,
-    );
-  });
-}
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`🔒 Auth Service running on http://localhost:${PORT}`);
+});
