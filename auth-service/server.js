@@ -148,7 +148,7 @@ const swaggerOptions = {
     },
   },
   apis: [
-    path.join(process.cwd(), "docs", "*.swagger.js"),
+    path.join(__dirname, "docs", "*.swagger.js"),
   ] /* Swagger documentation comments path*/,
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);

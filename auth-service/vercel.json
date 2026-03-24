@@ -3,7 +3,7 @@
   "framework": "express",
   "functions": {
     "server.js": {
-      "includeFiles": "docs/*.swagger.js"
+      "includeFiles": "docs/**/*"
     }
   }
 }
