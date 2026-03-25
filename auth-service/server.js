@@ -6,7 +6,6 @@ const { sign, verify } = require("jsonwebtoken");
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-const { serve, setup } = swaggerUi;
 const { PrismaClient } = require("@prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const { validateStrongPassword } = require("./passowrdValidator");
@@ -15,13 +14,36 @@ const { randomInt, createHash } = require("crypto");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const app = express();
+app.set("trust proxy", 1);
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
 });
 const prisma = new PrismaClient({ adapter });
 
 /* Middleware */
-app.use(cors());
+function getPublicOrigin(req) {
+  const forwardedProto = req.headers["x-forwarded-proto"]
+    ?.split(",")[0]
+    ?.trim();
+  const forwardedHost = req.headers["x-forwarded-host"]?.split(",")[0]?.trim();
+  const proto = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get("host");
+
+  return `${proto}://${host}`;
+}
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    return callback(null, true);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  credentials: false,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 /* Log every successful response */
@@ -131,12 +153,7 @@ const swaggerOptions = {
       version: "1.0.0",
       description: "Authentication endpoints for microservices architecture",
     },
-    servers: [
-      {
-        url:
-          process.env.APP_URL || `http://localhost:${process.env.PORT || 4000}`,
-      },
-    ],
+    servers: [{ url: "http://localhost:4000" }],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -154,37 +171,29 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 app.get("/openapi.json", (req, res) => {
-  res.json(swaggerSpec);
+  const origin = getPublicOrigin(req);
+  res.set("Cache-Control", "no-store");
+  res.set("Access-Control-Allow-Origin", "*");
+  res.json({
+    ...swaggerSpec,
+    servers: [{ url: origin }],
+  });
 });
 
-app.get("/docs", (req, res) => {
-  res.type("html").send(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Swagger UI</title>
-        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-        <style>
-          body { margin: 0; background: #fafafa; }
-        </style>
-      </head>
-      <body>
-        <div id="swagger-ui"></div>
-
-        <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-        <script>
-          window.onload = () => {
-            SwaggerUIBundle({
-              url: "/openapi.json",
-              dom_id: "#swagger-ui"
-            });
-          };
-        </script>
-      </body>
-    </html>
-  `);
+app.use("/docs", swaggerUi.serve);
+app.get(["/docs", "/docs/"], (req, res) => {
+  const origin = getPublicOrigin(req);
+  res.set("Cache-Control", "no-store");
+  res.send(
+    swaggerUi.generateHTML(null, {
+      swaggerOptions: {
+        url: `${origin}/openapi.json`,
+        validatorUrl: null,
+        persistAuthorization: true,
+      },
+      customSiteTitle: "Feedback Flow Backend Docs",
+    }),
+  );
 });
 
 /* --- MICROSERVICE HEALTH CHECK --- */
