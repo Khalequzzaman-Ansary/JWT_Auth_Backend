@@ -173,29 +173,33 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.get("/openapi.json", (req, res) => {
   const origin = getPublicOrigin(req);
   res.set("Cache-Control", "no-store");
-  res.set("Access-Control-Allow-Origin", "*");
   res.json({
     ...swaggerSpec,
     servers: [{ url: origin }],
   });
 });
 
-app.use("/docs", swaggerUi.serve);
-app.get(["/docs", "/docs/"], (req, res) => {
-  const origin = getPublicOrigin(req);
-  res.set("Cache-Control", "no-store");
-  res.send(
-    swaggerUi.generateHTML(null, {
-      swaggerOptions: {
-        url: `${origin}/openapi.json`,
-        validatorUrl: null,
-        persistAuthorization: true,
-      },
-      customSiteTitle: "Feedback Flow Backend Docs",
-    }),
-  );
-});
+const swaggerUiOptions = {
+  swaggerOptions: {
+    url: "/openapi.json",
+    validatorUrl: null,
+    persistAuthorization: true,
+  },
+  customSiteTitle: "Feedback Flow Backend Docs",
+};
 
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      url: "/openapi.json",
+      validatorUrl: null,
+      persistAuthorization: true,
+    },
+    customSiteTitle: "Feedback Flow Backend Docs",
+  }),
+);
 /* --- MICROSERVICE HEALTH CHECK --- */
 app.get("/health", (req, res) => {
   res.status(200).json({ service: "Auth Service", status: "Healthy" });
